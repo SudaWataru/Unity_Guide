@@ -1,0 +1,172 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//矢印キーの移動とFPS視点
+//FPS視点はメインカメラを視点にしたいオブジェクトの配下に格納することで可能
+//角度を変えながら前進・後進できるぞ
+//<十字キー移動_左右90度回転>と<十字キー移動_IF文無し版>のいいとこどりな移動
+public class MoveArrowKey_FPS : MonoBehaviour
+{
+    //現在位置を取得する変数の宣言
+    Vector3 pos;
+    
+    //速度を上げたり抑えたりするための変数の宣言
+    public float speed;
+    void Start()
+    {
+        //オブジェクトの現在の座標を入手
+        pos = transform.position;
+    }
+
+    void Update()
+    {
+        //Input.GetAxis("Horizontal")で水平方向(←→キー)の入力を追加させる
+        //→が+値、←が-値を受け取るので
+        //(Input.GetAxis("Horizontal") > 0)=(→キーを押している間)
+        if (Input.GetAxis("Horizontal") > 0)
+        {
+            //(入力値×回転速度)のy軸回転
+            transform.Rotate(0f, Input.GetAxis("Horizontal") * 1, 0f);
+        }
+        
+        //(Input.GetAxis("Horizontal") > 0)=(←キーを押している間)
+        else if (Input.GetAxis("Horizontal") < 0)
+        {
+            //(入力値×回転速度)のy軸回転
+            transform.Rotate(0f, Input.GetAxis("Horizontal") * 1, 0f);
+        }
+
+        //縦矢印入力を値で返し変数「tateyajirushi」に格納
+        //今回はspeedをかけて移動速度を抑えている(0.05～0.1くらいがちょうどいい)
+        //Input.GetAxis(""Vertical")で垂直方向(↑↓キー)の入力を追加させる
+        float tateyajirushi = Input.GetAxis("Vertical") * speed;
+        
+        //変数「pos」のy軸における座標を毎フレーム毎に「tateyajirushi」の分だけ増加
+        //↑↓キーの入力を前進の移動(座標移動)に反映
+        //transform.forwardでオブジェクトの常に前進
+        //↓キーでInput.GetAxis("Vertical")が-値になるため、後進になる
+        //前進、後進の動きなのでposに.xや.yで座標軸を固定してはいけない
+        pos += tateyajirushi * transform.forward;
+        
+        //変数「pos」の値をオブジェクトの座標に反映させる
+        //上の座標移動と回転動作を統合させる
+        transform.position = pos;
+    }
+}
+
+
+//横(x)移動と縦(z)移動を両立して斜め移動が可能
+//回転がないため視点の移り変わりがない
+public class MoveArrowKey_FPS_NotUseIF : MonoBehaviour
+{
+    //現在位置を取得する変数の宣言
+    Vector3 pos;
+    
+    //速度を上げたり抑えたりするための変数の宣言
+    public float speed = 0.1f;
+    void Start()
+    {
+        //オブジェクトの現在の座標を入手
+        pos = transform.position;
+    }
+
+    void Update()
+    {
+        //横矢印入力を値で返し変数「yokoyajirushi」に格納
+        //今回はspeedをかけて移動速度を抑えている(0.1くらいがちょうどいい)
+        //Input.GetAxis("Horizontal")で水平方向(←→キー)の入力を追加させる
+        float yokoyajirushi = Input.GetAxis("Horizontal") * speed;
+        
+        //縦矢印入力を値で返し変数「tateyajirushi」に格納
+        //今回はspeedをかけて移動速度を抑えている(0.1くらいがちょうどいい)
+        //Input.GetAxis(""Vertical")で垂直方向(↑↓キー)の入力を追加させる
+        float tateyajirushi = Input.GetAxis("Vertical") * speed;
+        
+        //変数「pos」のx軸における座標を毎フレーム毎に「yokoyajirushi」の分だけ増加
+        //←→キーの入力をx軸の移動(座標移動)に反映
+        pos.x += yokoyajirushi;
+        
+        //変数「pos」のy軸における座標を毎フレーム毎に「tateyajirushi」の分だけ増加
+        //↑↓キーの入力をz軸の移動(座標移動)に反映、
+        pos.z += tateyajirushi;
+        
+        //変数「pos」の値をオブジェクトの座標に反映させる
+        //上のx、zの動きを総合させる
+        transform.position = pos;
+    }
+}
+
+//IF文で管理されているため横(x)移動と縦(z)移動を同時に使った斜め移動が不可能
+public class 十字キー移動_簡易(分かりやすい)版 : MonoBehaviour
+{
+    //速度を格納する変数の宣言
+    public float speed = 1.0f;
+void Update()
+{
+    //Input.GetKeyでキーを押し続けている間の意味
+    //KeyCode.UpArrow=↑
+    //transform.upで上移動(y軸)、Time.deltaTimeで1フレーム分の時間
+    if (Input.GetKey(KeyCode.UpArrow))
+    {
+        transform.position += transform.up * speed * Time.deltaTime;
+    }
+    //Input.GetKeyでキーを押し続けている間の意味
+    //KeyCode.DownArrow=↓
+    //transform.upを-することで下移動(y軸)、Time.deltaTimeで1フレーム分の時間
+    if (Input.GetKey(KeyCode.DownArrow))
+    {
+        transform.position -= transform.up * speed * Time.deltaTime;
+    }
+    //Input.GetKeyでキーを押し続けている間の意味
+    //KeyCode.RightArrow=→
+    //transform.rightで右移動、Time.deltaTimeで1フレーム分の時間
+    if (Input.GetKey(KeyCode.RightArrow))
+    {
+        transform.position += transform.right * speed * Time.deltaTime;
+    }
+    //Input.GetKeyでキーを押し続けている間の意味
+    //KeyCode.LeftArrow=←
+    //transform.rightを-することで左移動、Time.deltaTimeで1フレーム分の時間
+    if (Input.GetKey(KeyCode.LeftArrow))
+    {
+        transform.position -= transform.right * speed * Time.deltaTime;
+    }
+    //Input.GetKeyでキーを押し続けている間の意味
+    //KeyCode.W=Wキー
+    //transform.forwardで前進、Time.deltaTimeで1フレーム分の時間
+    if (Input.GetKey(KeyCode.W))
+    {
+        transform.position += transform.forward * speed * Time.deltaTime;
+    }
+    //Input.GetKeyでキーを押し続けている間の意味
+    //KeyCode.S=Sキー
+    //transform.forwardを-することで後進、Time.deltaTimeで1フレーム分の時間
+    if (Input.GetKey(KeyCode.S))
+    {
+        transform.position -= transform.forward * speed * Time.deltaTime;
+    }
+}
+}
+
+public class 十字キー移動_左右90度回転 : MonoBehaviour
+{
+    public float speed = 1.0f;
+    void Update()
+    {
+        //Input.GetKeyDownでキーを押したの意味
+        //KeyCode.RightArrow=→キー
+        //transform.Rotate(0f, 90f, 0f)で90度回転 
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            transform.Rotate(0f, 90f, 0f);
+        }
+        //Input.GetKeyDownでキーを押したの意味
+        //KeyCode.LeftArrow=←キー
+        //transform.Rotate(0f, -90f, 0f)で-90度回転
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            transform.Rotate(0f, -90f, 0f);
+        }
+    }
+}
