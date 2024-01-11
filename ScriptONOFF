@@ -1,0 +1,38 @@
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+//ScriptのON/OFF
+public class SwitchScript : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler
+{
+    public System.Action onClickCallback;
+    [SerializeField] private GameObject close_popup;
+    [SerializeField] private GameObject script_stop;
+    [SerializeField] private GameObject script_start;
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClickCallback?.Invoke();
+        close_popup.SetActive(false);
+        script_stop.GetComponent<Loading_InputServerConnect>().enabled = false; //<>内のScriptをOFFにする
+        script_start.GetComponent<Loading_ConnectFailed>().enabled = true; //<>内のScriptをONにする
+        if (MissCheker.instance.progress_checker == 2)
+        {
+            //別クラスの変数を参照している
+            MissCheker.instance.progress_checker_past = MissCheker.instance.progress_checker; 
+            MissCheker.instance.progress_checker += 1;
+            Debug.Log("Progress_Checker:" + MissCheker.instance.progress_checker);
+        }
+    }
+    //機能：ボタンが押される
+    public void OnPointerDown(PointerEventData eventData)
+    {
+    }
+    // ボタンが離される
+    public void OnPointerUp(PointerEventData eventData)
+    {
+    }
+}
