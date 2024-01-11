@@ -1,0 +1,95 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using System.Linq;
+using UnityEngine.EventSystems;
+using System;
+
+//配列を使用したタブの切り替え
+public class ChangeTab_UsingArray : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler
+{
+    public System.Action onClickCallback;
+
+    /*タブの固定値を取得する変数*/
+    [SerializeField] int get_tab_number = 0;
+
+    /*タブの固定値を持っているオブジェクト*/
+    [SerializeField] GameObject tab;
+
+    /*別のスクリプトを呼び出すための変数*/
+    AddTab_UsingArray addtab_using;
+
+    /*タブにくっつく画面と変更画面、今回はカラー変更のみだがいずれは情報取得で画像変更*/
+    /*色情報はColor用の0~1の範囲*/
+    private float change_screen_im_r = 0.5401388f;
+    private float change_screen_im_g = 0.9622642f;
+    private float change_screen_im_b = 0.9202081f;
+
+    /*色を変更したい画像用の参照変数*/
+    [SerializeField] Image main_image_color;
+    [SerializeField] Image sub_image_color;
+
+    /*タブのY座標によって色を変えるためのY座標を取得する変数*/
+    Vector3 tab_posi;
+
+    /*ColorをColor32に変換する用の変数*/
+    Color32 af_image_color;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClickCallback?.Invoke();
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        /*スクリプト(AddTab_UsingArray)を情報をオブジェクトを通して取得*/
+        /*addtab_usingが情報を格納するための変数、tabが<>内のスクリプトを持つオブジェクト*/
+        addtab_using = tab.GetComponent<AddTab_UsingArray>();
+
+        /*スクリプト内の固定値をget_tab_numberに共有*/
+        get_tab_number = addtab_using.tab_number;
+
+        /*画像の色を青のみ初期化*/
+        change_screen_im_b = 0.9202081f;
+
+        /*画像の色を青のみ変更*/
+        /*タブの固定値によって色が変わるように計算*/
+        /*タブの固定値はintなので(float)でintをfloatに変換*/
+        change_screen_im_b = change_screen_im_b - 0.1f * (float)get_tab_number;
+
+        //Debug.Log(get_tab_number);
+
+        /*新しい色をColorからColor32に変換*/
+        af_image_color = new Color(change_screen_im_r, change_screen_im_g, change_screen_im_b);
+
+        
+        /*タブのローカル座標取得*/
+        tab_posi = tab.transform.localPosition;
+
+        /*タブのローカルのY座標を参照*/
+        /*上の位置*/
+        if (tab_posi.y == 436f)
+        {
+            /*メイン画面の方の画像の色を変更*/
+            main_image_color.color = af_image_color;
+        }
+        /*下の位置*/
+        else if (tab_posi.y == 0f)
+        {
+            /*サブ画面の方の画像の色を変更*/
+            sub_image_color.color = af_image_color;
+        }
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+
+    }
+}
