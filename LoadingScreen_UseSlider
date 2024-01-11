@@ -1,0 +1,109 @@
+using System.Collections;
+using System.Collections.Generic;
+using TMPro; //Text Mesh ProのTextを使用する時に必要
+using UnityEngine;
+using UnityEngine.UI; //UIを操作する時に必要
+
+//スライダーを使用したロード画面
+public class LoadingScreen_UseSlider : MonoBehaviour
+{
+    private float span = 0.1f;
+    public static LoadingScreen_UseSlider instance_Lo; //インスタンスを作成するための変数
+    
+    //共通事項
+    [SerializeField] private GameObject loadingUI;//ロード画面の表示
+    [SerializeField] private Slider slider;//ロード画面の増えるバーの機能や値を取得
+    [SerializeField] private GameObject endLoading;//ロード画面の非表示
+    public int switch_num = 1;//スイッチ用の変数
+    
+    //switch_number=3：接続→接続失敗の画面
+    [SerializeField] private Image change_background;
+    [SerializeField] private Sprite failed_state;
+    [SerializeField] private Image failed_state_cancelbutton;
+
+    //他のクラスで変数を共有するためのインスタンスを作成
+    public void Awake()
+    {
+        if (instance_Lo == null)
+        {
+            instance_Lo = this;
+        }
+    }
+
+    void Start()
+    {
+        slider = slider.GetComponent<Slider>(); //スライダーを使用するためにGetComponentを使用
+        change_background = change_background.GetComponent<Image>();
+        
+        /* LoadとSpriteでイメージの読み込み
+        Resources = Resourcesフォルダ参照
+        Load = 読み込み
+        <Sprite> = イメージはSprite型
+        ("")=読み込みたいファイルの名称。拡張子はいらない */
+        failed_state = Resources.Load<Sprite>("VMWare_Connect_Failed_Image"); 
+    }
+
+    //1フレームごとに呼び出し
+    void Update()
+    {
+        if (slider.value == 0.0f) //スライダーの値が0の時に起動
+        {
+            StartCoroutine("Logging"); //StartCoroutineでコルーチンを始める
+        }
+    }
+
+    /* コルーチンの書き方
+    IEnumerator 関数名()
+    {
+        //ここに処理を書く
+ 
+        //1フレーム停止(この書き方の場合)
+        yield return null;
+        
+        //好きな時間止めたい時
+        yield return new WaitForSeconds(止めたい秒数);
+ 
+        //ここに再開後の処理を書く
+    }
+    */
+    IEnumerator Logging()
+    {
+        while (slider.value < 1.0f)
+        {
+            slider.value += 0.05f;
+            yield return new WaitForSeconds(span); 
+        }
+        if (slider.value == 1.0f)
+        {
+            slider.value = 0.0f;
+            endLoading.SetActive(false);
+            Debug.Log("switch_num:" + switch_num.ToString()); //ToStringでint型をstring型に変換
+            
+            //Switchによる条件分岐。()内に条件分岐させたい変数を書く  
+            switch (switch_num) 
+            {
+                case 1:
+                    redisplay_button.enabled = true; //1つのインスペクター(Image)だけをONにする時の書き方
+                    redisplay_popup.SetActive(true);
+                    accpas_popup.SetActive(true);
+                    string ipaddress = main_server_name.text;
+                    accpas_server_name.text = "https://" + ipaddress;
+                    break;
+                case 2:
+                    //Debug.Log("Case 2 Beggining.");
+                    redisplay_button.enabled = true;
+                    redisplay_popup.SetActive(true);
+                    open_relayserver.enabled = true;
+                    break;
+                case 3:
+                    //Debug.Log(failed_state);
+                    change_background.sprite = failed_state;
+                    failed_state_cancelbutton.enabled = true;
+                    break;
+                default:
+                    Debug.Log("Miss you");
+                    break;
+            }
+        }
+    }
+}
