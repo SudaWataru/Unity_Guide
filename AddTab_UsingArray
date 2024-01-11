@@ -1,0 +1,179 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using System.Linq; //<配列>.Last();を使用するための機能
+using UnityEngine.EventSystems;
+using Unity.VisualScripting;
+
+//配列を使用してタブを作成・追加する
+public class AddTab_UsingArray : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler
+{
+    public System.Action onClickCallback;
+
+    public static AddTab_UsingArray instance_atua;
+
+    /*SetParentの対象先(Canvas)を用意*/
+    /*SetParentはオブジェクトを配下に置くための移動に使用*/
+    [SerializeField] private GameObject canvas; 
+
+    /*スクリーンの画面変更のために固定した値を用意*/
+    /*同じオブジェクトの他のスクリプトで使用できるようにpublic宣言*/
+    [SerializeField] public int tab_number= 0;
+
+    /*タブの固定値を記録するためだけの配列*/
+    /*0番目は使用しない*/
+    public static int[] array_width = { 0, 1 };
+
+    /*配列(array_width)の要素を増やすための配列*/
+    int[] array_add_int = { 0 };
+
+    /*配列(array_width)の加算用の変数*/
+    int array_width_num = 1;
+
+    /*横座標取得、縦固定、メイン*/
+    /*0番目はタブ移動のために使用しない*/
+    public static float[] array_point_width = { -864f, -814f };
+
+    /*追加するX座標保存用の配列を作成*/
+    public static float[] array_add_float = { 0f };
+
+    /*X軸の移動量の変数*/
+    float array_point_width_num;
+
+    /*オブジェクトを記録する配列_横*/
+    public static GameObject[] array_object_width = { null,null};
+
+    /*配列(array_object_width)の要素を増やすための配列*/
+    public static GameObject[] array_add_object = { null };
+
+    /*配列の長さを取得する変数_共用*/
+    int array_width_len = 0;
+
+    /*追加されるタブ*/
+    [SerializeField]private GameObject add_tab;
+
+    /*スクリプトを止めるための変数*/
+    [SerializeField] GameObject script_stop;
+
+    /*スクリプトを動かすための変数*/
+    [SerializeField] GameObject script_start;
+
+
+    /*タブの色変更用の変数*/
+    /*Color32のためにfloatで宣言*/
+    private float change_tab_im_r;
+    private float change_tab_im_g;
+    private float change_tab_im_b;
+
+    /*タブの初期化を1回だけにするためのフラグ*/
+    public static bool flg=false;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        /*<配列>.Last();でそれぞれの配列の最後の要素を取得*/
+        array_width_num = array_width.Last();
+        array_point_width_num = array_point_width.Last();
+
+        /*タブの初期化を1回だけ行う*/
+        /*array_object_width[1]にオリジナルを格納する用*/
+        if (flg==false)
+        {
+            array_object_width[1] = add_tab;
+            flg= true;
+        }
+
+        if (instance_atua == null)
+        {
+            instance_atua = this;
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClickCallback?.Invoke();
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    { 
+        /*タブの固定値を決定*/
+        tab_number = array_width_num;
+
+        /*分割用配列の追加分*/
+        array_width_num += 1;
+
+        /*X座標の移動分(新しいタブの出現場所)*/
+        array_point_width_num = array_point_width.Last() + 100f;
+
+        /*配列を拡張するための配列に増加分の値を格納*/
+        array_add_int[0] = array_width_num;
+        array_add_float[0] = array_point_width_num;
+
+        /*配列(array_width)の長さを取得*/
+        array_width_len = array_width.Length;
+
+        /*配列(array_width)の長さを要素追加用の配列(array_add_int)分大きくする*/
+        /*refを使用して内容が保存されたまま要素を要素を追加できるようにする*/
+        /*この段階では追加分の要素はまだ箱だけで内容はない*/
+        Array.Resize(ref array_width, array_width.Length + array_add_int.Length);
+
+        /*追加分の内容をコピペする*/
+        /*Array.Copy(＜コピー元配列＞, ＜コピー元の開始位置＞, ＜コピー先配列＞, ＜コピー先の開始位置＞, ＜コピーする要素数＞)*/
+        /*Array.Copy(＜追加要素を持つ配列＞, ＜追加要素を持つ配列の追加したい要素の開始位置＞, ＜追加させたい配列＞, ＜追加させたい開始位置＞, ＜追加分の要素数＞)*/
+        Array.Copy(array_add_int, 0, array_width, array_width_len, array_add_int.Length);
+
+        /*上に同じ_x座標*/
+        array_width_len = array_point_width.Length;
+        //Debug.Log(array_point_width.Length);
+        Array.Resize(ref array_point_width, array_point_width.Length + array_add_float.Length);
+        //Debug.Log(array_point_width.Length);
+        Array.Copy(array_add_float, 0, array_point_width, array_width_len, array_add_float.Length);
+
+
+        /*Instantiate(<増やしたいオブジェクト>, <ワールド座標>, <回転>);*/
+        GameObject instance = (GameObject)Instantiate(add_tab, Vector3.zero, Quaternion.identity);
+
+        /*増やしたオブジェクトをcanvas配下に移動*/
+        instance.transform.SetParent(canvas.transform);
+
+        /*オブジェクト記録用配列に格納*/
+        /*増やしたオブジェクトを拡張用配列に格納*/
+        array_add_object[0] = instance;
+
+        /*オブジェクト記録用配列を増設*/
+        array_width_len = array_object_width.Length;
+        Array.Resize(ref array_object_width, array_object_width.Length + array_add_object.Length);
+        Array.Copy(array_add_object, 0, array_object_width, array_width_len, array_add_object.Length);
+ 
+
+        /*ワールドスケールをローカルスケールに変更*/
+        instance.transform.localScale = new Vector3(1f, 1f, 1f);
+
+        /*ワールド座標をローカル座標に変更*/
+        instance.transform.localPosition = new Vector3(array_point_width.Last(), 436f, 0f);
+
+        /*増やしたタブの色をRGBに分けて取得*/
+        Image instance_color = instance.GetComponent<Image>();
+        change_tab_im_r = instance_color.color.r;
+        change_tab_im_g = instance_color.color.g;
+        change_tab_im_b = instance_color.color.b;
+
+        /*ColorからColor32へ変換する*/
+        /*その際に赤色を暗くしていく*/
+        Color32 im_color32 = new Color(change_tab_im_r -0.1f, change_tab_im_g, change_tab_im_b);
+
+        /*増やしたタブの色のcolorを変更*/
+        instance_color.color = im_color32;    
+
+        /*オブジェクトの持つスクリプトのON/OFF*/
+        script_stop.GetComponent<AddTab_UsingArray>().enabled= false;
+        script_start.GetComponent<ChangeTab_UsingArray>().enabled = true;
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+
+    }
+}
