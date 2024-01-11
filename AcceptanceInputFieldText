@@ -1,0 +1,30 @@
+using System.Collections;
+using System.Collections.Generic;
+//TextMeshPro(TMP)の付いた機能を使用する際に必要
+using TMPro;
+using UnityEngine;
+
+//InputField_TMPでの入力受け取り
+public class AcceptanceInputFieldText : MonoBehaviour
+{
+    //TMPのInputFieldの宣言
+    public TMP_InputField _inputField;
+    
+    //TMPのTextの宣言
+    public TextMeshProUGUI _text;
+    
+    void Start()
+    {
+        //GetComponentでそれぞれの機能を取得
+        _inputField = _inputField.GetComponent<TMP_InputField>();
+        _text = _text.GetComponent<TextMeshProUGUI>();
+    }
+    
+    public void InputName()
+    {
+        //nameにInputFieldからの入力を格納
+        string name = _inputField.text;
+        //Textにnameの内容を反映。これによって入力の内容を画面に表示させることができる。
+        _text.text = name;
+    }
+}
