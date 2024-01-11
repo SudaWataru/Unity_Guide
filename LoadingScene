@@ -1,0 +1,40 @@
+using System.Collections;
+using System.Collections.Generic;
+using TMPro; //Text Mesh Proを使用する時に必要
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;  //シーンを扱う時に必要
+using UnityEngine.UI;
+
+public class LoadingScene : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler
+{
+    public System.Action onClickCallback;
+    [SerializeField] private TextMeshProUGUI chapter_name;
+    private string chapterName;
+    
+    //機能：ボタンが押され、その後ドラッグ操作が入ることなくボタンが離される
+    //PointerEventData:ポインタ（マウス/タッチ）イベントに関連するイベントの情報データが使用できる型
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClickCallback?.Invoke();
+        chapterName = chapter_name.text;
+        Debug.Log(chapterName);
+
+		    //Containsで()内の"文字数が含まれているなら"という条件にする
+        if (chapterName.Contains("ConnectCommercialEnvironment")==true) 
+        {
+			      //SceneManager.LoadScene("")で()内のシーンのロードを行う
+            SceneManager.LoadScene("ConnectCommercialEnvironment"); 
+        }
+    }
+
+    //機能：ボタンが押される
+    public void OnPointerDown(PointerEventData eventData)
+    {
+    }
+    
+    // ボタンが離される
+    public void OnPointerUp(PointerEventData eventData)
+    {
+    }
+}
