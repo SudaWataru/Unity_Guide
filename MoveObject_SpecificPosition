@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-public class MoveObject_RayCastPosition : MonoBehaviour
+public class MoveObject_SpecificPosition : MonoBehaviour
 {
     //RigidBody定義
     Rigidbody rigidbody;
