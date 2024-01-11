@@ -1,0 +1,53 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+public class MoveObject_RayCastPosition : MonoBehaviour
+{
+    //RigidBody定義
+    Rigidbody rigidbody;
+
+    //Position定義
+    Vector3 StartPos;
+    
+    // Startは最初のフレームアップデート前に呼び出される
+    void Start() {
+        
+        //Objectの長さ、重さ、当たり判定取得
+        rigidbody = this.GetComponent<Rigidbody>();
+    
+        //現在位置取得
+        Transform tr = this.GetComponent<Transform>();
+        this.StartPos = tr.position;
+    }
+
+    // Update内は1フレームごとに1回呼び出される
+    void Update()
+    {
+        
+        //現在位置取得
+        Transform tr = this.GetComponent<Transform>();
+        
+        //以降、現在位置を短く使うために別変数に格納
+        Vector3 pos = tr.position;
+        
+        if(pos.x < 5.5f)
+        {
+            //加速度1.0の移動
+            Vector3 force = new Vector3(1, 0, 0);
+            this.GetComponent<Rigidbody>().AddForce(force, ForceMode.Force);
+    
+            //現在位置取得
+            tr = this.GetComponent<Transform>();
+            pos = tr.position;
+            //Debug.Log(pos);
+        }
+        
+        else
+        {
+            //加速度を使用したとき、速度を0にすることで物体を止められる
+            this.rigidbody.velocity = new Vector3(0, 0, 0);
+        }
+    }
+}
+    
+        
