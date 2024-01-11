@@ -1,0 +1,105 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//条件付きのオブジェクト回転操作
+public class ObjectRotate : MonoBehaviour
+{
+    void Start()
+    {
+        //オブジェクトの現在の座標を入手
+        Transform myTransform = this.transform;
+    }
+
+    void Update()
+    {
+        //オブジェクトの現在の座標を入手
+        Transform myTransform = this.transform;
+        
+        // ワールド座標を基準に、現在の回転具合を取得
+        Vector3 worldAngle = myTransform.eulerAngles;
+
+        //Input.GetAxis("Horizontal")で水平方向(←→キー)の入力を追加させる
+        //→が+値、←が-値で受け取られるなので
+        //(Input.GetAxis("Horizontal") > 0)=(→キーを押している間)
+        if (Input.GetAxis("Horizontal") > 0)
+        {
+            //15度より大きくて345度より小さい角度"じゃない"角度の時
+            //→15度<角度<345度の間の角度の時
+            if (!(worldAngle.z > 15f && worldAngle.z < 345f))
+            {
+                //入力に応じてZ軸を回転させる
+                transform.Rotate(0f, 0f, Input.GetAxis("Horizontal") * -1);
+            }
+            
+            //15度より大きいか345度より小さい角度の時
+            else if (worldAngle.z >= 15f || worldAngle.z <= 345f)
+            {
+                //Z軸の回転具合を346度に固定
+                worldAngle.z = 346f;
+                myTransform.eulerAngles = worldAngle;
+            }
+        }
+        
+        //(Input.GetAxis("Horizontal") > 0)=(←キーを押している間)
+        else if (Input.GetAxis("Horizontal") < 0)
+        {
+            //15度より大きくて345度より小さい角度"じゃない"角度の時
+            //→15度<角度<345度の間の角度の時
+            if (!(worldAngle.z > 15f && worldAngle.z < 345f))
+            {
+                //入力に応じてZ軸を回転させる
+                transform.Rotate(0f, 0f, Input.GetAxis("Horizontal") * -1);
+            }
+            
+            //15度より大きいか345度より小さい角度の時
+            else if (worldAngle.z >= 15f || worldAngle.z <= 345f)
+            {
+                //Z軸の回転具合を14度に固定
+                worldAngle.z = 14f;
+                myTransform.eulerAngles = worldAngle;
+            }
+        }
+
+        //Input.GetAxis("Vertical")で垂直方向(↑↓キー)の入力を追加させる
+        //↑が+値、↓が-値で受け取られるなので
+        //(Input.GetAxis("Vertical") > 0)=(↑キーを押している間)
+        if (Input.GetAxis("Vertical") > 0)
+        {
+            //15度より大きくて345度より小さい角度"じゃない"角度の時
+            //→15度<角度<345度の間の角度の時   
+            if (!(worldAngle.x > 15f && worldAngle.x < 345f))
+            {
+                //入力に応じてX軸を回転させる
+                transform.Rotate(Input.GetAxis("Vertical") * 1, 0f, 0f);
+            }
+            
+            //15度より大きいか345度より小さい角度の時
+            else if (worldAngle.x >= 15f || worldAngle.x <= 345f)
+            {
+                //Z軸の回転具合を14度に固定
+                worldAngle.x = 14f;
+                myTransform.eulerAngles = worldAngle;
+            }
+        }
+        //(Input.GetAxis("Horizontal") > 0)=(←キーを押している間)
+        else if (Input.GetAxis("Vertical") < 0)
+        {
+            //15度より大きくて345度より小さい角度"じゃない"角度の時
+            //→15度<角度<345度の間の角度の時   
+            if (!(worldAngle.x > 15f && worldAngle.x < 345f))
+            {
+                //入力に応じてX軸を回転させる
+                transform.Rotate(Input.GetAxis("Vertical") * 1, 0f, 0f);
+            }
+            
+            //15度より大きいか345度より小さい角度の時
+            else if (worldAngle.x >= 15f || worldAngle.x <= 345f)
+            {
+                //Z軸の回転具合を346度に固定
+                worldAngle.x = 346f;
+                myTransform.eulerAngles = worldAngle;
+            }
+        }
+    }
+}
