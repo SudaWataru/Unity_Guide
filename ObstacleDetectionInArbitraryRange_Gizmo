@@ -1,0 +1,155 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+//障害物を検知するための検知範囲の可視化
+//SpereCollideが機能していれば自動で付与
+//MonoBehaviourも継承もないのでAdd Compornentする必要もない
+//ギズモを使って可視化
+public static class 検知範囲の可視化_ギズモ
+{
+    //より円に近似できるような数字を選択
+    //より円に近似できる=三角形の数の多さ
+    //12以外でもOK。数が大きくなればなるほど円に近くなる
+    private static readonly int TRIANGLE_COUNT = 12;
+    
+    //指定範囲の色付け
+    //ColorでRGBAを決定、1がMAX
+    //Aは白黒(明暗)
+    private static readonly Color MESH_COLOR = new Color(1.0f, 1.0f, 0.0f, 0.7f);
+    
+    /*可視化する範囲の指定*/
+    [DrawGizmo(GizmoType.NonSelected | GizmoType.Selected)]
+    private static void DrawPointGizmos(Sercher i_object, GizmoType i_gizmoType)
+    {
+        //可視化の範囲(長さ)=SpereColliderにあるradiusの大きさ
+        //=センサーの大きさ
+        if (i_object.SearchRadius <= 0.0f)
+        {
+            return;
+        }
+        
+        //可視化部分の色付け
+        Gizmos.color = MESH_COLOR;
+        
+        //可視化させるオブジェクトの現在位置の獲得
+        Transform transform = i_object.transform;
+        
+        //可視化範囲を少し高めにする(Vector.up=(0,1,0))
+        Vector3 pos = transform.position + Vector3.up * 0.01f;
+        
+        //現在位置の回転の取得
+        Quaternion rot = transform.rotation;
+        
+        //可視化範囲の定義(Vector3.one=(1,1,1))
+        Vector3 scale = Vector3.one * i_object.SearchRadius;
+        
+        /*サーチ範囲(角度)の表示*/
+        if (i_object.SearchAngle > 0.0f)
+        {
+            //可視化範囲の色づけ=メッシュの情報作成
+            Mesh fanMesh = CreateFanMesh(i_object.SearchAngle, TRIANGLE_COUNT);
+            
+            //ギズモで可視化範囲の表示
+            Gizmos.DrawMesh(fanMesh, pos, rot, scale);
+        }
+    }
+    
+    /*可視化範囲の表示作成*/
+    private static Mesh CreateFanMesh(float i_angle, int i_triangleCount)
+    {
+        //色についての変数定義
+        var mesh = new Mesh();
+        
+        //アングルの頂点の配列の定義
+        var vertices = CreateFanVertices(i_angle, i_triangleCount);
+        
+        //三角形の頂点順に頂点インデックス配列を作成
+        //円を近似するために三角形を使う
+        var triangleIndexes = new List<int>(i_triangleCount * 3);
+        
+        //三角形の頂点順に頂点インデックス配列を作成
+        for (int i = 0; i < i_triangleCount; ++i)
+        {
+            //始点
+            triangleIndexes.Add(0);
+            
+            //1点目
+            triangleIndexes.Add(i + 1);
+            
+            //2点目
+            triangleIndexes.Add(i + 2);
+        }
+        mesh.vertices = vertices;
+        mesh.triangles = triangleIndexes.ToArray();
+        
+        //三角形と頂点からメッシュの法線を再計算
+        //法線が逆になると逆方向になってしまうため大事
+        //Mesh.RecalculateNormals()で記載
+        //今回はmeshがMeshを持っているため大丈夫
+        mesh.RecalculateNormals();
+        return mesh;
+    }
+
+    /*扇型の頂点の位置の指定*/
+    private static Vector3[] CreateFanVertices(float i_angle, int i_triangleCount)
+    {
+        //警告(アングル)
+        if (i_angle <= 0.0f)
+        {
+            //例外処理の書き方
+            //throw new System.ArgumentException();
+            throw new System.ArgumentException(string.Format("角度がおかしい i_angle={0}", i_angle));
+        }
+        
+        //警告(三角形の頂点の数)
+        if (i_triangleCount <= 0)
+        {
+            //例外処理の書き方
+            //throw new System.ArgumentException();
+            throw new System.ArgumentException(string.Format("数がおかしい　i_trianleCount={0}", i_triangleCount));
+        }
+        
+        //アングルの指定(0.0°~360.0°まで)とリストに追加
+        //Mathf.Minは2つ以上の値から最小値を返す
+        //片方を360度(最大)にすることでi_angleを選ばせるようにする
+        //三角形の頂点を+2したリストの追加=最低1個の三角形を作れるようにするため
+        //始点に+2して三角形を作っている
+        i_angle = Mathf.Min(i_angle, 360.0f);
+        var vertices = new List<Vector3>(i_triangleCount + 2);
+        
+        //始点
+        vertices.Add(Vector3.zero);
+        
+        //Mathf.Sin()とMathf.Cos()で使用するのは角度でなくラジアンなので変換しておく
+        //ラジアン変換
+        float radian = i_angle * Mathf.Deg2Rad;
+        
+        //放射状に広げるために―をかける
+        float startRad = -radian / 2;
+        
+        //三角形1個当たりの角度
+        float incRad = radian / i_triangleCount;
+        
+        //三角形の頂点の個数分扇形を増やしていく
+        //かぶってくる部分があるが総合的に円に近く見えるようになる
+        //forで全部の頂点を出さなければ表示作成のところで上手く作れなくなる
+        //例えばただの掛け算 currentRad = startRad + (incRad * i_triangleCount);だと、
+        //頂点数が足りなくなってしまう（良くわからない）
+        for (int i = 0; i < i_triangleCount + 1; ++i)
+        {
+            //角度を追加していっている
+            float currentRad = startRad + (incRad * i);
+            
+            //三角形の2点を作成
+            Vector3 vertex = new Vector3(Mathf.Sin(currentRad), 0.0f, Mathf.Cos(currentRad));
+            
+            //1つの三角形の情報を追加
+            vertices.Add(vertex);
+        }
+
+        //リストを配列に変換
+        return vertices.ToArray();
+    }
+}
