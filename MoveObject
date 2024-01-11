@@ -1,0 +1,66 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//座標指定移動
+public class MoveObject_SetPosition: MonoBehaviour
+{
+    //RigidBody定義
+    new Rigidbody rigidbody;
+
+    // Startは最初のフレームアップデート前に呼び出される
+    void Start()
+    {
+        rigidbody = this.GetComponent<Rigidbody>();
+    }
+
+    // Update内は1フレームごとに1回呼び出される
+    void Update()
+    {
+        //座標指定移動
+        this.transform.position += new Vector3(0, 0, 0.05f);
+    }
+}
+
+//等速直線運動
+public class MoveObject_ConstantVelocity: MonoBehaviour
+{
+    //RigidBody定義
+    Rigidbody rigidbody2;
+
+    // Startは最初のフレームアップデート前に呼び出される
+    void Start()
+    {
+        rigidbody2 = this.GetComponent<Rigidbody>();
+    }
+
+    // Update内は1フレームごとに1回呼び出される
+    void Update()
+    {
+        //速度1.0の移動
+        this.rigidbody2.velocity = new Vector3(-1f, 0, 0);
+    }
+}
+
+//等加速度直線運動
+public class MoveObject_Acceleration: MonoBehaviour
+{
+    new Rigidbody rigidbody;
+
+    // Startは最初のフレームアップデート前に呼び出される
+    void Start()
+    {
+        rigidbody = this.GetComponent<Rigidbody>();
+    }
+
+    // Update内は1フレームごとに1回呼び出される
+    void Update()
+    {
+        //加速度を与えるベクトルの定義
+        Vector3 force = new Vector3(1, 0, 0);
+
+        //(加速度を与えるベクトル, ForceMode.力の与え方)
+        //Forceは質量に対して継続的な力を与える
+        rigidbody.AddForce(force, ForceMode.Force);
+    }
+}
