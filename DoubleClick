@@ -1,0 +1,83 @@
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+//ダブルクリック処理
+public class DoubleClick : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler
+{
+    public System.Action onClickCallback;
+    private int click_count;
+    private bool click_flg;
+    [SerializeField] private GameObject open_popup;
+    [SerializeField] private GameObject close_popup_1;
+    [SerializeField] private Image close_popup_2;
+    [SerializeField] private GameObject miss_popup;
+    
+    // Start is called before the first frame update
+    void Start()
+    {
+        click_count = 0;
+        click_flg = false;
+    }
+    
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClickCallback?.Invoke();
+        click_count++;
+        //Invoke("",〇);で〇秒後に""関数を起動させる
+        Invoke("OnDoubleClick", 0.3f); 
+    }
+    
+    //機能：ボタンが押される
+    public void OnPointerDown(PointerEventData eventData)
+    {
+    }
+    
+    // ボタンが離される
+    public void OnPointerUp(PointerEventData eventData)
+    {
+    }
+    
+    private void OnDoubleClick()
+    {
+        if (click_count != 2)
+        {
+            click_count = 0;
+            return; //ここにreturnを挟むことで if (click_flg == false) の処理にたどり着かないようにしている
+        }
+        else //ここにreturnを書かないことでclick_countのリセットと if (click_flg == false) までたどり着くようにしている
+        {
+            click_count = 0;
+        }
+        
+        //ここまで来ているということはclick_count=2になっているということ
+        //途中にreturnなどの邪魔がないのですんなりとここまでたどり着く
+        if (click_flg == false)
+        {
+            if (MissCheker.instance.progress_checker == 1 || MissCheker.instance.progress_checker == 3)
+            {
+                MissCheker.instance.progress_checker_past = MissCheker.instance.progress_checker;
+                MissCheker.instance.progress_checker += 1;
+                Debug.Log("Progress_Checker:" + MissCheker.instance.progress_checker);
+                //Debug.Log("DoubleClick!");
+                close_popup_1.SetActive(false);
+                close_popup_2.enabled = false;
+                open_popup.SetActive(true);
+                click_flg = true;
+                Loading.instance_Lo.switch_num = 1;
+            }
+            else if (MissCheker.instance.progress_checker != 1 && MissCheker.instance.progress_checker != 3)
+            {
+                miss_popup.SetActive(true);
+                MissCheker.instance.miss_checker += 1;
+            }
+        }
+        else
+        {
+            click_flg = false;
+        }
+    }
+}
