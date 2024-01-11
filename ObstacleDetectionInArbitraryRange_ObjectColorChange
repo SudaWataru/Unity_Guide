@@ -1,0 +1,60 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//障害物を検知した際にセンサーオブジェクトの色変更
+//任意範囲障害物検知が働ないてないと機能しない
+//MonoBehaviourなのでこのスクリプトも一緒に格納必要
+//センサーオブジェクトの色が変わるという内容
+public class 対象物発見で色変更 : MonoBehaviour
+{
+    //デフォルト色
+    [SerializeField]
+    private Material    m_defaultMaterial = null;
+
+    //発見時の色
+    [SerializeField]
+    private Material    m_foundMaterial = null;
+    
+    //整形、描画、表示機能
+    private Renderer m_renderer = null;
+    
+    //ターゲットの状態確保リスト(型はゲームオブジェクト)
+    private List<GameObject> m_targets = new List<GameObject>();
+    
+    /*1番最初の呼び出し*/
+    private void Awake()
+    {
+        //整形、描画、表示機能
+        m_renderer = GetComponentInChildren<Renderer>();
+        
+        //任意範囲障害物検知で取得した情報の獲得
+        //見つけたリストと見失ったリストを獲得
+        var searching = GetComponentInChildren<任意範囲障害物検知>();
+        searching.onFound += OnFound;
+        searching.onLost += OnLost;
+    }
+    
+    /*発見時のオブジェクト状態*/
+    private void OnFound( GameObject i_foundObject )
+    {
+        //発見時のターゲットリストに情報追加
+        m_targets.Add( i_foundObject );
+        
+        //見つけた時に変わってほしい色に変更
+        m_renderer.material = m_foundMaterial; 
+    }
+
+    /*見失った時のオブジェクト状態*/
+    private void OnLost( GameObject i_lostObject )
+    {
+        //見失った時のターゲットリストに情報削除
+        m_targets.Remove( i_lostObject );
+        
+        //デフォルト色に変更
+        if( m_targets.Count == 0)
+        {
+            m_renderer.material = m_defaultMaterial;
+        }
+    }
+}
