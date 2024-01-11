@@ -1,0 +1,41 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//Raycastを使用した一方向のセンサー
+public class RayCastSensor : MonoBehaviour
+{
+    //光線が物に当たってない時は-1を表示
+    public const float NOTHING = -1;
+    
+    //光線の届く最大距離
+    public float maxDistance;
+    
+    //光線の当たった物までの距離
+    public float distance;
+    
+    // Update is called once per frame
+    void Update()
+    {
+        //オブジェクト(センサー)の向き
+        //TransformDirection=(ローカル座標をワールド座標に値を変換)
+        //Vector3.forwardで前方向
+        Vector3 fwd = transform.TransformDirection(Vector3.forward);
+        
+        //光線が当たった先の情報を取得
+        RaycastHit hit;
+        
+        //光線の当たり判定
+        //Physics.Raycast(光線の始点の座標(絶対), 光線の向き(絶対), 当たった対象の情報(任意), 光線の距離(任意),レイヤマスクの設定(任意))
+        if( Physics.Raycast(transform.position, fwd, out hit, maxDistance) )
+        {
+            //対象物との距離を表示
+            distance = hit.distance;
+        }
+        else
+        {
+            //何もない場合は-1を表示
+            distance = NOTHING;
+        }
+    }
+}
