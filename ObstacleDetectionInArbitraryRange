@@ -1,0 +1,331 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//任意範囲障害物検知
+//今回はXZ軸360度を扱いたいのでSpereColliderを使用
+//ColliderのIsTriggerをONにする必要がある(しないと目標物まで届かずにぶつかってしまう)
+public class ObstacleDetectionInArbitraryRange : MonoBehaviour
+{
+    //オブジェクトの発見、見失いのコールバックを作る
+    //eventで複数登録を可能にし、System.Actionで型と変数の定義
+    //System.Action<型> 変数 という書き方。
+    //()=>{}はそれぞれの状況の時に登録処理をする書き方。
+    public event System.Action<GameObject> onFound = (Obj) => { };
+    public event System.Action<GameObject> onLost = (Obj) => { };
+    
+    //感知範囲の指定
+    //SerializeFieldはそのフィールドがシリアライズ可能であることを表す属性
+    //シリアライズとは、オブジェクトをバイト列に変換する操作を意味
+    [SerializeField, Range(0.0f, 360.0f)]
+    
+    //角度全体を格納するための変数
+    private float m_searchAngle = 0.0f;
+    
+    //内積を使用して半分の角度で済ませられるようにCos値をとるための変数
+    private float m_searchCosTheta = 0.0f;
+    
+    //SphereColliderを使用(対象と)する
+    private SphereCollider m_sphereCollider = null;
+    
+    //前回見つからず、今回見つかった場合は「見つけた」と判断し、
+    //今回見つからず、前回見つかった場合は「見失った」と判断するためのリスト
+    private List<FoundData> m_foundList = new List<FoundData>();
+    
+    /*サーチ範囲(角度)を返す*/
+    //全体の角度を取得している
+    public float SearchAngle
+    {
+        get { return m_searchAngle; }
+    }
+    
+    /*サーチ範囲(距離)を返す*/
+    //SpereColliderを使ってサーチ範囲の距離を計るため、
+    //サーチ範囲の大きさはSpereColliderにパラメータが存在する
+    public float SearchRadius
+    {
+        get
+        {
+            //SphereColliderが存在しないならコンポーネント取得
+            if (m_sphereCollider == null)
+            {
+                //SphereColliderのコンポーネント獲得
+                m_sphereCollider = GetComponent<SphereCollider>();
+            }
+            //SphereColliderが獲得できているなら、距離を0とする
+            //m_sphereCollider != null ? m_sphereCollider.radius : 0.0f;
+            //↑条件式を1行で書く書き方
+            //(条件式) ? (trueの時に返す値) : (falseの時に返す値);
+            return m_sphereCollider != null ? m_sphereCollider.radius : 0.0f;
+        }
+    }
+    
+    //SphereColliderの獲得とサーチ範囲の決定
+    //AwakeはStartよりも先(1番最初)に呼び出される
+    private void Awake()
+    {
+        m_sphereCollider = GetComponent<SphereCollider>();
+        //サーチ範囲の決定の関数を呼び出している
+        ApplySearchAngle();
+    }
+    
+    /*リストの初期化*/
+    private void OnDisable()
+    {
+        m_foundList.Clear();
+    }
+    
+    /*決定したサーチ範囲の通知と保存*/
+    private void OnValidate()
+    {
+        ApplySearchAngle();
+    }
+    
+    /*サーチ範囲の決定*/
+    private void ApplySearchAngle()
+    {
+        //獲得したサーチ範囲を半分にしてラジアン値に変更
+        //Mathf.Deg2Radでラジアンに変換している
+        float searchRad = m_searchAngle * 0.5f * Mathf.Deg2Rad;
+        
+        //得られたラジアン値のCos値を獲得
+        m_searchCosTheta = Mathf.Cos(searchRad);
+    }
+
+    /*更新した角度判定を獲得、保存*/
+    private void Update()
+    {
+        UpdateFoundObject();
+    }
+    
+    /*角度判定の更新処理*/
+    private void UpdateFoundObject()
+    {
+        //ターゲットオブジェクトに見つけたデータを格納
+        //リストの要素を１つ１つ変数に格納して、
+        //要素の数だけループが行う
+        //foundDataはリストのオブジェクトを格納するための変数(forループのnと同じ役割)
+        foreach (var foundData in m_foundList)
+        {
+            //リスト内のオブジェクトをターゲットに格納
+            GameObject targetObject = foundData.Obj;
+            
+            //targetObjectがnullでも続ける
+            if (targetObject == null)
+            {
+                continue;
+            }
+            
+            //オブジェクトの当たり判定と更新
+            //isFoundは当たりの有無を格納する変数
+            //IsFound、CheckFoundObjectは関数で後述される
+            bool isFound = CheckFoundObject(targetObject);
+            
+            //当たり判定を更新
+            foundData.Update(isFound);
+            
+            //ターゲットが見つけた判断
+            if (foundData.IsFound())
+            {
+                //onFoundリストにターゲットを格納
+                onFound(targetObject);
+            }
+            //ターゲットを見失った判断
+            else if (foundData.IsLost())
+            {
+                //onLstリストにターゲットを格納
+                onLost(targetObject);
+            }
+        }
+    }
+    
+    /*障害物検知のためのRayを飛ばす*/
+    private bool CheckFoundObject(GameObject i_target)
+    {
+        //ターゲットと自身の位置情報の取得
+        //i_targetはターゲットのオブジェクト
+        Vector3 targetPosition = i_target.transform.position;
+        Vector3 myPosition = transform.position;
+        
+        //得られた座標からターゲットと自身のXZのみの座標取得
+        //Vector3.Scaleは2つのベクトルの各成分を乗算する
+        //XZのみの座標を取得=Y座標を0にするためにVector3.Scaleを使う
+        Vector3 myPositionXZ = Vector3.Scale(myPosition, new Vector3(1.0f, 0.0f, 1.0f));
+        Vector3 targetPositionXZ = Vector3.Scale(targetPosition, new Vector3(1.0f, 0.0f, 1.0f));
+        
+        //ターゲットと自身のXZ座標の距離を取得
+        //.normalizedで正規化
+        Vector3 toTargetFlatDir = (targetPositionXZ - myPositionXZ).normalized;
+        
+        //回転を気にせず、Z軸上で移動する
+        Vector3 myFoward = transform.forward;
+        
+        //アングルの範囲にターゲットが無ければFalseを返す
+        if (!IsWithinRangeAngle(myFoward, toTargetFlatDir, m_searchCosTheta))
+        {
+            return false;
+        }
+        
+        //ターゲットと自身の全体の距離を取得
+        Vector3 toTargetDir = (targetPosition - myPosition).normalized;
+        
+        //ターゲットにRayが当たらなければFalseを返す
+        if (!IsHitRay(myPosition, toTargetFlatDir, i_target))
+        {
+            return false;
+        }
+        
+        //falseがなければtrueになる
+        //trueにするには2つの関門を突破する必要がある
+        return true;
+    }
+
+    /*アングルの範囲にターゲットがあるかを示す*/
+    private bool IsWithinRangeAngle(Vector3 i_forwardDir, Vector3 i_toTargetDir, float i_cosTheta)
+    {
+        //方向ベクトルがない場合は同じ位置にあるものだと判断する
+        if (i_toTargetDir.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return true;
+        }
+        
+        //前方の距離とターゲットまでの距離の内積を取る
+        float dot = Vector3.Dot(i_forwardDir, i_toTargetDir);
+        
+        //内積dotがi_cosTheta以上ならTrue
+        return dot >= i_cosTheta;
+    }
+    
+    /*ターゲットにRayが当たったかを示す*/
+    private bool IsHitRay(Vector3 i_fromPosition, Vector3 i_toTargetDir, GameObject i_target)
+    {
+        //方向ベクトルがない場合は同じ位置にあるものだと判断する。
+        if (i_toTargetDir.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return true;
+        }
+        
+        //RaycastHit = Rayが当たればTrue、当たらなければFalseを返す
+        RaycastHit onHitRay;
+        
+        //Rayが任意のコライダーと交わる場合は true、それ以外は false
+        //ベクトル変数、対象までの距離、Rayが当たったかどうかの真偽、参照距離を対象とする
+        if (!Physics.Raycast(i_fromPosition, i_toTargetDir, out onHitRay, SearchRadius))
+        {
+            return false;
+        }
+        
+        //ターゲットにRayがあたっていなければFalse
+        if (onHitRay.transform.gameObject != i_target)
+        {
+            return false;
+        }
+        
+        //2つの関門を突破したらtrue
+        return true;
+    }
+    
+    /*オブジェクトを見つけたら追加する*/
+    //Colliderで判断するため、Colliderを持たないオブジェクトには反応しない
+    private void OnTriggerEnter(Collider i_other)
+    {
+        //Colliderで取得したオブジェクトをオブジェクトで取得
+        GameObject enterObject = i_other.gameObject;
+        
+        //念のため多重登録されないようにする
+        //.Findでオブジェクトの検索
+        //value=>value.Objでvalueの.Obj成分を指定
+        //== enterObjectで同じ名前のオブジェクトを検索
+        if (m_foundList.Find(value => value.Obj == enterObject) == null)
+        {
+            //.Addで追加
+            m_foundList.Add(new FoundData(enterObject));
+        }
+    }
+
+    /*オブジェクトを見失ったら削除する*/
+    private void OnTriggerExit(Collider i_other)
+    {
+        GameObject exitObject = i_other.gameObject;
+        
+        //登録されているオブジェクトの検索
+        var foundData = m_foundList.Find(value => value.Obj == exitObject);
+        
+        //検索してもオブジェクトがなければそのまま
+        if (foundData == null)
+        {
+            return;
+        }
+        
+        //検索してオブジェクトがあれば削除リストに登録する
+        //前回見つからず、今回見つかった場合は「見つけた」と判断し、
+        //今回見つからず、前回見つかった場合は「見失った」と判断するためのリストから削除
+        if (foundData.IsCurrentFound())
+        {
+            onLost(foundData.Obj);
+        }
+        m_foundList.Remove(foundData);
+    }
+    
+    /*ターゲットの発見状態の管理をするクラス*/
+    private class FoundData
+    {
+        /*オブジェクト取得*/
+        public FoundData(GameObject i_object)
+        {
+            m_obj = i_object;
+        }
+        
+        //獲得オブジェクトの初期設定
+        private GameObject m_obj = null;
+        
+        //現在の状態
+        private bool m_isCurrentFound = false;
+        
+        //過去の状態
+        private bool m_isPrevFound = false;
+        
+        /*オブジェクトの獲得、保存*/
+        public GameObject Obj
+        {
+            get { return m_obj; }
+        }
+        
+        /*オブジェクトがあるなら現在位置の獲得を、
+        ないならベクトルの初期化(0, 0, 0)をする*/
+        public Vector3 position
+        {
+            get { return Obj != null ? Obj.transform.position : Vector3.zero; }
+        }
+        
+        /*状態の更新*/
+        public void Update(bool i_isFound)
+        {
+            //過去の状態の更新(現在の状態を過去のものにする)
+            m_isPrevFound = m_isCurrentFound;
+            
+            //現在の状態を新たに獲得した真偽値にする
+            m_isCurrentFound = i_isFound;
+        }
+        
+        /*見つけた状態*/
+        /*現在の状態と過去の状態の逆の状態を取得*/
+        public bool IsFound()
+        {
+            return m_isCurrentFound && !m_isPrevFound;
+        }
+        
+        /*見失った状態*/
+        /*現在の状態の逆の状態と過去の状態を取得*/
+        public bool IsLost()
+        {
+            return !m_isCurrentFound && m_isPrevFound;
+        }
+        
+        /*現在の状態を獲得、保存*/
+        public bool IsCurrentFound()
+        {
+            return m_isCurrentFound;
+        }
+    }
+}
