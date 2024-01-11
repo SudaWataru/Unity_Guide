@@ -1,0 +1,123 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//精度低い
+// FPSとは1秒間内のフレーム数のこと
+// (FPS)=(フレーム数) / (1秒)
+public class DisplayFPS_Easy : MonoBehaviour
+{
+    //fpsの値を格納する変数の宣言
+    float fps;
+    
+    // Update内は1フレームごとに1回呼び出される
+    void Update()
+    {
+        //(fps)= 1 ÷ (前の"フレーム"と現在の"フレーム"の差分(秒単位))
+        // Time.deltaTime = (1フレーム進むためにかかった時間)
+        fps = 1f / Time.deltaTime;
+        
+        //unityのconsole画面に表示
+        Debug.Log(fps);
+    }
+
+    // 表示処理
+    //OnGUI：GUIを表示させる処理を書き込む関数
+    //※Update関数同様、毎フレームごとに呼ばれる関数
+    void OnGUI()
+    {
+        //GUIで表示させる文字の大きさを固定
+        GUI.skin.label.fontSize = 100;
+        
+        //GUILayout.Label関数：ラベルを画面上に表示させている
+        //※引数にとったString型の変数をラベルに表示させる関数
+        //.ToString()：強制的にStr型に変換させる関数。
+        //※今回のfpsはfloat型なので必要
+        GUILayout.Label(fps.ToString());
+    }
+}
+
+//精度高い
+// FPSとは1秒間内のフレーム数のこと
+// (FPS)=(フレーム数) / (1秒)
+//0.5秒刻みにすることで精度を上げている
+public class DisplayFPS_High  : MonoBehaviour
+{
+    //フレームの出現回数を記録する変数
+    int frameCount;
+    
+    //0.5秒前のリアルタイムを記録
+    float prevTime;
+    
+    //fpsの値を格納する変数の宣言
+    float fps;
+    
+    // Startは最初のフレームアップデート前に呼び出される
+    void Start()
+    {
+        //初期化
+        frameCount = 0;
+        prevTime = 0.0f;
+    }
+    
+    // Update内は1フレームごとに1回呼び出される
+    void Update()
+    {
+        //フレームの出現回数を+1
+        frameCount++;
+        
+        //(差分時間)=(ゲームをスタートしてから経過した現在時刻) - (0.5秒前のリアルタイム)
+        float time = Time.realtimeSinceStartup - prevTime;
+        
+        //差分時間が0.5秒経過するたびに起動
+        if (time >= 0.5f)
+        {
+            //(fps)=(フレームの出現回数) ÷ (差分時間)
+            fps = frameCount / time;
+            
+            //ログ表示
+            Debug.Log(frameCount);
+            Debug.Log(fps);
+            
+            //フレームの出現回数リセット
+            frameCount = 0;
+            
+            //現在時刻を0.5秒前の時刻に設定
+            prevTime = Time.realtimeSinceStartup;
+        }
+    }
+
+    // 表示処理
+    //OnGUI：GUIを表示させる処理を書き込む関数
+    //※Update関数同様、毎フレームごとに呼ばれる関数
+    void OnGUI()
+    {
+        //GUIで表示させる文字の大きさを固定
+        GUI.skin.label.fontSize = 100;
+        
+        //GUILayout.Label関数：ラベルを画面上に表示させている
+        //※引数にとったString型の変数をラベルに表示させる関数
+        //.ToString()：強制的にStr型に変換させる関数。
+        //※今回のfpsはfloat型なので必要
+        GUILayout.Label(fps.ToString());
+    }
+}
+
+/*
+簡易(Easy)版（イメージは単純計算）
+説明：1フレームにかかる時間から1秒で何フレームになるかを計算している
+デメリット：1フレームにかかる時間に依存してるため、誤差が大きくなる
+メリット：1フレームごとに見ているので結果の出力速度が早い
+
+高度(High)版（イメージは平均化）
+説明：0.5秒の内に進んだフレーム数を数えてから1秒で何フレームになるかを計算している
+メリット：高度版は0.5秒にかかるフレーム数を見てから1秒にかかるフレーム数を計算できるため1フレームごとの時間の差に左右されにくい
+デメリット：高度版は0.5秒ごとに出力するので簡易版よりも出力が早かったり遅かったりするが安定はする
+前提：FPSは1秒内にあるフレーム数
+つまり、1秒が基準なので1フレームを軸として考えると誤差が大きくなる。
+→1フレームにかかった時間を拡大解釈するとフレーム数を数百倍、数千倍にしているため。
+例）
+1フレーム進むのに0.01秒かかった時、簡易版では100FPSと結果が出る。
+しかし、本来は1秒内のフレーム数が85(つまり85FPS)だったら、15FPSの差が出てしまっている。
+そのため、1秒で見る必要がある。
+*/
