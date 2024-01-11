@@ -1,0 +1,57 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//マウスポインタのある場所にオブジェクトが瞬時に移動する
+public class MoveObject_RaycastPosition : MonoBehaviour
+{
+    //RigidBody定義
+    Rigidbody rigidbody2;
+
+    //Position定義
+    //Vector3：3D ベクトルと位置の表現を付与する
+    Vector3 StartPos2;
+    
+    void Start() {
+        
+        rigidbody2 = this.GetComponent<Rigidbody>();
+        
+        //現在位置取得
+        Transform tr2 = this.GetComponent<Transform>();
+        this.StartPos2 = tr2.position;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //マウスのボタンを押した時
+        if(Input.GetMouseButtonDown(0))
+        {
+            //カメラの移している範囲から
+            //マウスポインタのある位置を取得して当たり判定のある光線を出す
+            //Camera.mainでメインカメラを対象にとっている。メインカメラのタグを変えてしまうとこれでは動かなくなるので注意。
+            //↑専用のタグなはずなのでメインカメラのタグは基本的に変えないように。
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            
+            //当たった場合の値を取得(今回はステージの座標)
+            RaycastHit hit;
+            
+            //もし当たり判定が真の場合は当たった場所へ瞬間移動
+            //Raycast(Vector3 origin, Vector3 direction, RaycastHit hitInfo, float maxDistance)
+            //Raycast(光線の開始地点、光線の方向、オブジェクト情報を取得、光線の長さ(デフォは無限))
+            //当たればTrue、当たらなかったらFalse
+            //ifは()内がTrueであれば自動的に起動（>=<はあくまでも()内の真偽を決めるための判断材料に過ぎないと認識しよう）
+            //outでhitが"取得した"情報を出している
+            if(Physics.Raycast(ray, out hit))
+            {
+                //x, zはマウスポインタの示す位置の格納
+                float x = hit.point.x;
+                float y = this.StartPos2.y;
+                float z = hit.point.z;
+                
+                //物体の移動
+                transform.position = new Vector3(x, y, z);
+            }
+        }
+    }
+}
