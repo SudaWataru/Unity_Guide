@@ -1,0 +1,37 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//IPointerEnterHandler, IPointerExitHandlerを使用するため記入
+using UnityEngine.EventSystems;
+
+//Image等のUI操作をするため記入(今回はImageのColorを変更するために必要)
+using UnityEngine.UI;
+
+/*マウスカーソルの移動を判定してほしいので
+Canvas外から入った時に判定の入るIPointerEnterHandlerと
+Canvas内から外部に出た時に判定の入るIPointerExitHandlerを
+使用する
+*/
+
+//マウスカーソルがオブジェクトの内部および外部に移動したときの操作
+public class MouseOperation : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+{
+    //外部から内部に入った時の判定
+    void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
+    {
+        //imageにGetComponentで情報をImageの情報を取得
+        var image = GetComponent<Image>();
+        //取得したimageのcolorをCorlor.redで赤色に変更、RGBで詳細に決定することも可能
+        image.color = Color.red;
+    }
+    //内部から外部に出た時の判定
+    void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
+    {
+        //imageにGetComponentで情報をImageの情報を取得
+        var image = GetComponent<Image>();
+        //取得したimageのcolorをCorlor.whiteで白色(デフォルト)に変更、RGBで詳細に決定することも可能
+        image.color = Color.white;
+    }
+
+}
