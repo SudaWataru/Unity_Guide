@@ -1,0 +1,366 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using System.Linq;
+using UnityEngine.EventSystems;
+
+//配列を使用したタブの上下左右移動
+/*IBeginDragHandler, IDragHandler, IEndDragHandlerでドラッグ(掴んで離す)操作*/
+/*
+ IBeginDragHandler→OnBeginDrag(掴んだときの状態)を使用可能にする
+ IDragHandler→OnDrag(掴んでいる間)を使用可能にする
+ IEndDragHandler→OnEndDrag(離したときの状態)を使用可能にする
+ */
+public class MoveTab_UsingArray : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+{
+    /*タブ内のスクリプト(ddTab_UsingArray)を使用可能にするための宣言*/
+    AddTab_UsingArray addtab_usingarray;
+    [SerializeField] GameObject tab;
+
+    /*タブを記録する配列_横_このスクリプト限定のもの*/
+    /*public staticをつけないと情報共有されないので注意*/
+    public static GameObject[] array_object_width_2 = { null };
+
+    /*配列(array_object_width_2)の要素を増やすための配列*/
+    public GameObject[] array_add_object_2 = { null };
+
+    /*横座標取得、メイン*/
+    /*0番目はタブ移動のために使用しない*/
+    public static float[] array_point_width_2 = { -864f, -814f };
+
+    /*追加するX座標保存用の配列を作成*/
+    float[] array_add_float_2 = { 0f };
+
+    /*配列の増設に使用する配列の長さを取得するための変数_スクリプト内のみ共用*/
+    private int array_len;
+
+    /*選択したタブの名前を取得する変数*/
+    string get_tab_name;
+
+    /*タブのX、Y軸の移動座標を取得する変数*/
+    float x_pos;
+    float y_pos;
+
+    /*上画面か下画面化を決定するためのY軸の移動量を受け取る変数*/
+    float y_dif_pos;
+
+    /*Y軸の移動量を計るための前後のY座標を受け取る変数*/
+    float be_y_pos;
+    float af_y_pos;
+
+    /*割り込ませポイント探る時に使用する変数*/
+    /*for文で配列の数を増やしていく時に使用するための変数*/
+    /*宣言しておかないと下記のように宣言したときにfor文の外で使用できない*/
+    /*for(int a; a < 10; a++) ←このとき a はfor文の外で使用不可になる*/
+    int array_element;
+
+    /*選択したタブが配列内で何番目かを確認する変数*/
+    int select_element;
+
+    /*タブを整列させるときにタブを格納するための変数*/
+    GameObject move_tab_obj;
+
+    /*タブ追加スクリプトの配列とタブ移動スクリプトで
+    タブの移動に関するスクリプトを共用するための変数*/
+    float[] basic_point_array; //X座標に関する配列
+    GameObject[] basic_object_array;　//タブに関する配列
+
+    /*画面の上下で移動操作を2回分ループさせるための変数*/
+    int roop;
+
+    /*タブの上下でサブ画面のON/OFF*/
+    [SerializeField] GameObject sub_image;
+
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        /*タブ内のスクリプト(AddTab_UsingArray)の情報を受け取っている*/
+        addtab_usingarray = tab.GetComponent<AddTab_UsingArray>();
+    }
+
+    // ドラッグ開始時に実行されるメソッド
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        /*選択したタブの名前とY座標を受け取る*/
+        get_tab_name = addtab_usingarray.name;
+        be_y_pos = this.transform.localPosition.y;
+    }
+
+    // ドラッグ中に実行されるメソッド
+    public void OnDrag(PointerEventData eventData)
+    {
+        /*今動いているタブの座標をGetLocalPosition関数を作成して取得している*/
+        this.transform.localPosition = GetLocalPosition(((PointerEventData)eventData).position, this.transform);
+    }
+
+    /*タブの移動座標を取得する自作関数*/
+    /*https://www.matatabi-ux.com/entry/2020/11/05/100000 より*/
+    private static Vector3 GetLocalPosition(Vector3 position, Transform transform)
+    {
+        // 画面上の座標 (Screen Point) を RectTransform 上のローカル座標に変換
+        /*RectTransform は矩形の位置、サイズ、アンカー、ピボットの情報をもつ*/
+        /*RectTransformUtility は RectTransform と動作するヘルパーメソッドを含むユーティリティクラス*/
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            transform.parent.GetComponent<RectTransform>(),
+            position,
+            Camera.main,
+            out var result);
+
+        /*返り値は現在のX座標とY座標*/
+        /*固定する場合は実数を入力する→y座標を固定するとX軸方向にしか動かなくなる*/
+        return new Vector3(result.x, result.y, 0);
+    }
+
+    // ドラッグ終了時に実行されるメソッド
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        /*離した瞬間のローカルのY座標を取得*/
+        af_y_pos = this.transform.localPosition.y;
+
+        /*掴んだ時と離したときのY座標の差を算出*/
+        /*今回のローカル座標は-436～436となっているため
+        上から下に行くと差は＋に、下から上に行くと差はーになる。
+        また、値がが大きいほど差が離れていて、小さいほど差が小さい*/
+        y_dif_pos = be_y_pos - af_y_pos;
+
+
+        /*縦移動用設定*/
+        /*差が-400～436の間(中間層)ではY座標の動きはなし*/
+        /*
+        -400：下から上に移動させたときの差、
+         436：上から下に移動させたときの差
+        */
+        if (y_dif_pos < 436f && y_dif_pos > -400f)
+        {
+
+        }
+
+        /*
+        差が436以上になるとタブが下画面に移動
+        436：Y座標が0より下に行ったということ
+        */
+        else if (y_dif_pos >= 436f)
+        {
+            /*タブが下に移動したときにサブ画面のON*/
+            sub_image.SetActive(true);
+
+            /*下画面用タブ記録配列に選択されたタブを格納する*/
+            /*その後タブ追加スクリプト内のタブ記録配列から選択されたタブを抜く必要がある*/
+
+            /*まずはforで選択されたタブと同じ名前を探す*/
+            for (int a = 1; a < AddTab_UsingArray.array_object_width.Length; a++)
+            {
+                if (AddTab_UsingArray.array_object_width[a].name == get_tab_name)
+                {
+                    /*先に下画面用タブ記録配列に選択されたタブを格納する*/
+                    /*格納方法は配列の増設*/
+                    array_add_object_2[0] = AddTab_UsingArray.array_object_width[a];
+                    array_len = array_object_width_2.Length;
+                    Array.Resize(ref array_object_width_2, array_object_width_2.Length + array_add_object_2.Length);
+                    Array.Copy(array_add_object_2, 0, array_object_width_2, array_len, array_add_object_2.Length);
+
+                    /*タブ追加スクリプト内のタブ記録配列から選択されたタブを削除*/
+                    /*LINQによる指定で削除している。配列のサイズも同時に調整している*/
+                    /*https://codelikes.com/csharp-array-delete/ より*/
+                    AddTab_UsingArray.array_object_width = AddTab_UsingArray.array_object_width.Where(value => value != AddTab_UsingArray.array_object_width[a]).ToArray();
+                }
+            }
+
+            /*下画面用のX座標記録用配列を作成*/
+            /*ただし、0番目と1番目は50分の差しかないため、下画面のタブが2個以上になると機能するように設定*/
+            if (array_object_width_2.Length > 2)
+            {
+                /*タブ記録用配列同様に増設でX座標を記録*/
+                array_add_float_2[0] = array_point_width_2.Last() + 100f;
+                array_len = array_point_width_2.Length;
+                Array.Resize(ref array_point_width_2, array_point_width_2.Length + array_add_float_2.Length);
+                Array.Copy(array_add_float_2, 0, array_point_width_2, array_len, array_add_float_2.Length);
+
+                /*タブ記録用配列同様にタブ追加スクリプト内のX座標記録用配列のX座標を削除*/
+                /*こちらは移動範囲が短くなるだけなので最後の要素(-864から最も離れている値)を削除*/
+                AddTab_UsingArray.array_point_width = AddTab_UsingArray.array_point_width.Where(value => value != AddTab_UsingArray.array_point_width.Last()).ToArray();
+            }
+
+        }
+
+        /*-400以下のマイナスの値が出た場合、下から上へタブが移動できるほどの移動量があったということになす*/
+        /*条件を下から上への移動は行わないようにしている*/
+        /*下から上へのタブの操作を行いたい場合はこの欄に(y_dif_pos >= 436f)の場合と対象が逆の操作を記入する*/
+        else if (y_dif_pos <= -400f)
+        {
+            /*タブが上に移動したときにサブ画面のON*/
+            sub_image.SetActive(false);
+
+            /*下画面用タブ記録配列に選択されたタブを格納する*/
+            /*その後タブ追加スクリプト内のタブ記録配列から選択されたタブを抜く必要がある*/
+
+            /*まずはforで選択されたタブと同じ名前を探す*/
+            for (int a = 1; a < array_object_width_2.Length; a++)
+            {
+                if (array_object_width_2[a].name == get_tab_name)
+                {
+                    /*先に下画面用タブ記録配列に選択されたタブを格納する*/
+                    /*格納方法は配列の増設*/
+                    AddTab_UsingArray.array_add_object[0] = array_object_width_2[a];
+                    array_len = AddTab_UsingArray.array_object_width.Length;
+                    Array.Resize(ref AddTab_UsingArray.array_object_width, AddTab_UsingArray.array_object_width.Length + AddTab_UsingArray.array_add_object.Length);
+                    Array.Copy(AddTab_UsingArray.array_add_object, 0, AddTab_UsingArray.array_object_width, array_len, AddTab_UsingArray.array_add_object.Length);
+
+                    /*タブ追加スクリプト内のタブ記録配列から選択されたタブを削除*/
+                    /*LINQによる指定で削除している。配列のサイズも同時に調整している*/
+                    /*https://codelikes.com/csharp-array-delete/ より*/
+                    array_object_width_2 = array_object_width_2.Where(value => value != array_object_width_2[a]).ToArray();
+                }
+            }
+
+            /*下画面用のX座標記録用配列を作成*/
+            /*ただし、0番目と1番目は50分の差しかないため、下画面のタブが2個以上になると機能するように設定*/
+            if (AddTab_UsingArray.array_object_width.Length > 2)
+            {
+                /*タブ記録用配列同様に増設でX座標を記録*/
+                AddTab_UsingArray.array_add_float[0] = AddTab_UsingArray.array_point_width.Last() + 100f;
+                array_len = AddTab_UsingArray.array_point_width.Length;
+                Array.Resize(ref AddTab_UsingArray.array_point_width, AddTab_UsingArray.array_point_width.Length + AddTab_UsingArray.array_add_float.Length);
+                Array.Copy(AddTab_UsingArray.array_add_float, 0, AddTab_UsingArray.array_point_width, array_len, AddTab_UsingArray.array_add_float.Length);
+
+                /*タブ記録用配列同様にタブ追加スクリプト内のX座標記録用配列のX座標を削除*/
+                /*こちらは移動範囲が短くなるだけなので最後の要素(-864から最も離れている値)を削除*/
+                array_point_width_2 = array_point_width_2.Where(value => value != array_point_width_2.Last()).ToArray();
+            }
+
+        }
+
+
+
+
+        /*横移動用設定*/
+        /*上画面と下画面で2回分のX軸の操作があるため、共用変数を使用してroopさせる*/
+        for (roop = 1; roop < 3; roop++)
+        {
+            /*上画面の操作*/
+            /*タブ追加スクリプトの配列を対象にし、Ｙ座標を436に固定する*/
+            if (roop == 1)
+            {
+                basic_point_array = AddTab_UsingArray.array_point_width;
+                basic_object_array = AddTab_UsingArray.array_object_width;
+
+                y_pos = 436f;
+            }
+
+            /*下画面の操作*/
+            /*タブ追加スクリプトの配列を対象にし、Ｙ座標を0に固定する*/
+            else if (roop == 2 && array_object_width_2.Length != 1)
+            {
+                basic_point_array = array_point_width_2;
+                basic_object_array = array_object_width_2;
+
+                y_pos = 0f;
+
+            }
+
+            /*下画面の操作 */
+            /*タブが1つだけの時はX軸の移動がないため、終了しておく
+            つまり、上画面だけ操作して終了させる*/
+            else if (roop == 2 && array_object_width_2.Length == 1)
+            {
+                break;
+            }
+
+            /*タブを離した位置のX軸を取得*/
+            x_pos = this.transform.localPosition.x;
+
+            /*選択されたタブをX座標に合うようにタブ記録用配列内で並べ替える*/
+            /*まずは選択されたタブをタブ記録用配列から探す*/
+            for (int n = 1; n < basic_object_array.Length; n++)
+            {
+                if (basic_object_array[n].name == get_tab_name)
+                {
+                    /*タブ記録用配列内にある選択されたタブの要素番号を取得*/
+                    select_element = n;
+
+                    /*選択されたタブが-864(要素番号：0)から左にある場合は-814(要素番号：1)の位置にタブを移動させる*/
+                    /*ただの入れ替えとは違うため、分かりやすいバブルソートをする*/
+                    /*一気に移動させる方法があればその方がいい*/
+                    if (x_pos <= basic_point_array[0])
+                    {
+                        for (int m = select_element; m > 1; m--)
+                        {
+                            GameObject l = basic_object_array[m];
+                            basic_object_array[m] = basic_object_array[m - 1];
+                            basic_object_array[m - 1] = l;
+
+                        }
+                    }
+
+                    /*選択されたタブが-864(要素番号：0)より右で最後の位置より左にある場合は位置によってタブを割り込ませる*/
+                    /*ただの入れ替えとは違うため、分かりやすいバブルソートをする*/
+                    /*一気に移動させる方法があればその方がいい*/
+                    else if (x_pos > basic_point_array[0] && x_pos <= basic_point_array.Last())
+                    {
+                        /*どことどこのタブの間に割り込ませようとしているかをfor文を使用して確認*/
+                        for (array_element = 1; array_element < basic_point_array.Length; array_element++)
+                        {
+                            if (x_pos > basic_point_array[array_element - 1] && x_pos <= basic_point_array[array_element])
+                            {
+                                /*割り込み位置が選択されたタブの元の位置より左のとき*/
+                                if (select_element > array_element)
+                                {
+                                    /*どかしたいタブを元の位置方向(右)に必要分だけ移動させる*/
+                                    for (int m = select_element; m > array_element; m--)
+                                    {
+                                        GameObject l = basic_object_array[m];
+                                        basic_object_array[m] = basic_object_array[m - 1];
+                                        basic_object_array[m - 1] = l;
+                                    }
+                                }
+                                /*割り込み位置が選択されたタブの元の位置より右のとき*/
+                                else if (select_element < array_element)
+                                {
+                                    /*どかしたいタブを元の位置方向(左)に必要分だけ移動させる*/
+                                    for (int m = select_element; m < array_element; m++)
+                                    {
+                                        GameObject l = basic_object_array[m];
+                                        basic_object_array[m] = basic_object_array[m - 1];
+                                        basic_object_array[m - 1] = l;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    /*選択されたタブが最後の位置より右ある場合、最後の位置に移動させる*/
+                    /*ただの入れ替えとは違うため、分かりやすいバブルソートをする*/
+                    /*一気に移動させる方法があればその方がいい*/
+                    else if (x_pos > basic_point_array.Last())
+                    {
+                        for (int m = select_element; m < basic_object_array.Length - 1; m++)
+                        {
+                            GameObject l = basic_object_array[m];
+                            basic_object_array[m] = basic_object_array[m + 1];
+                            basic_object_array[m + 1] = l;
+                        }
+                    }
+                }
+            }
+
+
+            /*タブの総並び変え(X軸移動)*/
+            /*X座標の指定はタブの数に依存するため、for文の条件をタブ記録用配列の長さで指定*/
+            for (int b = 1; b < basic_object_array.Length; b++)
+            {
+                /*タブ記録用配列内のタブを要素番号：1から取得*/
+                move_tab_obj = basic_object_array[b];
+
+                /*タブの位置に対応するX座標をX座標記録用配列内から指定*/
+                x_pos = basic_point_array[b];
+
+                /*ローカル座標でタブの座標固定*/
+                /*Y座標(y_pos)はX座標設定を行うタイミング(194行目)で指定されているため大丈夫*/
+                move_tab_obj.transform.localPosition = new Vector3(x_pos, y_pos, 0f);
+            }
+        }
+    }
+}
