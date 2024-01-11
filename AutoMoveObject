@@ -1,0 +1,54 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+//自動追跡を可能にするためのエンジン
+using UnityEngine.AI;
+
+//指定した任意位置に向かってオブジェクトが自動で移動
+public class AutoMoveObject : MonoBehaviour
+{
+    //自動追跡するためのエージェントの宣言
+    public NavMeshAgent myAgent;
+    
+    //目的地となるオブジェクトを格納する変数の宣言
+    public GameObject target;
+    
+    //クリックした場所の座標を記録する変数の宣言
+    private Vector3 RayPos;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        //自動追跡用の情報追加
+        myAgent = gameObject.GetComponent<NavMeshAgent>();
+    }
+    
+    // Update is called once per frame
+    void Update()
+    {
+        //左クリックした時に起動
+        if(Input.GetMouseButtonDown(0))
+        {
+            //マウスポインタの位置情報取得
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            
+            //光線が床にぶつかった時に起動
+            if(Physics.Raycast(ray, out hit))
+            {
+                //光線で取得した座標を格納
+                float x = hit.point.x;
+                float z = hit.point.z;
+                
+                //目的地にするように座標を保持
+                RayPos = new Vector3(x, 1f, z);
+                
+                //目的地オブジェクトがクリックした場所に移動
+                target.transform.position = RayPos;
+                
+                //目的地に向かって自動追跡
+                myAgent.destination = target.transform.position;
+            }
+        }
+    }
+}
