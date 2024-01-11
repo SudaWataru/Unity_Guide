@@ -1,0 +1,57 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+//別クラスの変数を常に参照する
+public class OneClick : MonoBehaviour, IPointerClickHandler,IPointerDownHandler,IPointerUpHandler
+{
+    //★このクラスのインスタンス作成
+    public static OneClick instance_1;
+    
+    public System.Action onClickCallback;
+    [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] public bool click_onoff;
+    private float time_c;
+    
+    void Start()
+    {
+        if (instance_1 == null)
+        {
+            instance_1 = this;
+        }
+        click_onoff = false;
+        time_c = 0f; 
+    }
+    
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        onClickCallback?.Invoke();
+        
+        /*★常に参照したい(値の受け送りしたい)変数の書き方
+        ここでインスタンスを用いた変数の参照を行うことで
+        他クラスで操作した値と連動することができる*/
+        OneClick.instance_1.click_onoff = true;
+        
+        Debug.Log(OneClick.instance_1.click_onoff);
+    }
+    public void OnPointerDown(PointerEventData eventData)
+    {
+    }
+    public void OnPointerUp(PointerEventData eventData)
+    {
+    }
+
+    void Update()
+    {
+        if (time_c >= 0.5f) 
+        {
+            click_onoff = false;
+            time_c=0f;
+        }
+        else if(time_c < 0.5f)
+        {
+            time_c += Time.deltaTime;
+        }
+    }
+}
