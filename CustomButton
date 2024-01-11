@@ -1,0 +1,62 @@
+//DOTweenを使用しているため入力必要
+using DG.Tweening;
+using UnityEngine;
+using UnityEngine.EventSystems;
+
+//自作ボタン
+public class CustomButton : MonoBehaviour,
+    //ボタンで使いたい機能を持ってきている、詳細は後述
+    //今回はよく使用する3つの機能を追加
+    IPointerClickHandler,
+    IPointerDownHandler,
+    IPointerUpHandler
+{
+    //System.Actionはdelegateの短縮系
+    /*delegate」は、コールバックを実装する標準的な方法です。
+     「delegate」のコールバックの型の定義と変数の定義を行い、変数で関数を保持し、
+      最後にInvoke()を呼ぶことでコールバックを呼び出すことができます。*/
+    public System.Action onClickCallback;
+    
+    //[SerializeField]でシリアライズ化
+    //CanvasGroup型の変数宣言
+    [SerializeField] private CanvasGroup _canvasGroup;
+
+    //機能：ボタンが押され、その後ドラッグ操作が入ることなくボタンが離される
+    //PointerEventData:ポインタ（マウス/タッチ）イベントに関連するイベントの情報データが使用できる型
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        //invokeでコールバック
+        //入力ブロッキングを行っている
+        /*外部からタップした時の処理をセットしたいもの。
+          それを実現するためにpublicのAction変数を宣言し、
+          OnPointerClickで実行します。*/
+        
+        //onClickCallback?の?はonClickCallbackをnull許容型に変換している
+        //null許容値型とは?をくっつけた変数または型にnullが代入できる、またはnullでも機能するようになる
+        //○○?の詳細はこちら：https://unitygeek.hatenablog.com/entry/2017/04/13/160634
+        //invoke("呼び出す関数",秒数);
+        onClickCallback?.Invoke();
+    }
+    
+    //機能：ボタンが押される
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        //サイズ変更
+        //SetEase()でサイズ変更の際のアニメーションを選択できる
+        //Ease.OutCubicはサイズ変更の際のアニメーションの種類の1つ
+        //アニメーションの実際の動きはこちら：https://game-ui.net/?p=835
+        transform.DOScale(0.95f, 0.24f).SetEase(Ease.OutCubic);
+        _canvasGroup.DOFade(0.8f, 0.24f).SetEase(Ease.OutCubic);
+    }
+    
+    // ボタンが離される
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        //サイズ変更
+        //SetEase()でサイズ変更の際のアニメーションを選択できる
+        //Ease.OutCubicはサイズ変更の際のアニメーションの種類の1つ
+        //アニメーションの実際の動きはこちら：https://game-ui.net/?p=835
+        transform.DOScale(1f, 0.24f).SetEase(Ease.OutCubic);
+        _canvasGroup.DOFade(1f, 0.24f).SetEase(Ease.OutCubic);
+    }
+}
