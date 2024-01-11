@@ -1,0 +1,40 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//任意位置オブジェクト作成
+public class CreateObject_RaycastPosition : MonoBehaviour
+{
+    //作成するオブジェクトを格納する変数の宣言
+    public GameObject Prefab;
+    
+    //クリックした場所の座標を記録する変数の宣言
+    private Vector3 RayPos;
+    
+    // Update is called once per frame
+    void Update()
+    {
+        //左クリックした時に起動   
+        if(Input.GetMouseButtonDown(0))
+        {
+            //マウスポインタの位置情報取得
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            
+            //光線が床にぶつかった時に起動
+            if(Physics.Raycast(ray, out hit))
+            {
+                //光線で取得した座標を格納
+                float x = hit.point.x;
+                float z = hit.point.z;
+                
+                //オブジェクトを作成する座標を決定する
+                RayPos = new Vector3(x, 1f, z);
+            
+                //Instantiate(作成するオブジェクト, ポジション, 回転具合)
+                //↑オブジェクト作成
+                Instantiate(Prefab, RayPos, Quaternion.identity);
+            }
+        }
+    }
+}
