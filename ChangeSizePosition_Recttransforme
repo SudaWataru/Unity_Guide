@@ -1,0 +1,88 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+using System.Diagnostics.Contracts;
+
+//Recttransformeを使用した画像のサイズ・位置変更
+public class WalkCountBar_HideBar : MonoBehaviour
+{
+    //RectTransformを編集するため、
+    //サイズや位置を変更させたいオブジェクトを割り当てるようにする
+    [SerializeField] private RectTransform hidebar;
+
+    //目標歩数を設定するテキスト
+    [SerializeField] private TextMeshProUGUI today_goal;
+
+    //現在歩いた歩数を取得
+    //現在は歩数計機能が無いので値を自由に変更できるようにしている
+    [SerializeField] private int walkcount;
+
+    //目標歩数から最大歩数を当てるための変数
+    private int max_walkcount;
+
+    //編集されるサイズの値を取得
+    private Vector2 bar_size;
+
+    //編集される位置の値を取得
+    private Vector2 bar_pos;
+
+    //最大値と現在値の割合
+    private float subration;
+
+    //1から最大値と現在値の割合を引いた割合
+    private float ration;
+
+    private void Start()
+    {
+        //対象オブジェクトのサイズ(Width,Heght)を取得
+        bar_size = hidebar.sizeDelta;
+    }
+
+
+    // Update is called once per frame
+    void Update()
+    {
+        //目標値から最大値を出している
+        if (today_goal.text == "10,000")
+        {
+            max_walkcount = 40000;
+        }
+        else if (today_goal.text == "500")
+        {
+            max_walkcount = 2000;
+        }
+        else if (today_goal.text == "1,000")
+        {
+            max_walkcount = 4000;
+        }
+        else if (today_goal.text == "2,000")
+        {
+            max_walkcount = 8000;
+        }
+        else if (today_goal.text == "5,000")
+        {
+            max_walkcount = 20000;
+        }
+
+        //現在値と最大値の割合
+        //割合はfloatの方が正しいため、各歩数を(float)でfloat型に変換
+        subration = (float)walkcount / (float)max_walkcount;
+
+        //1-(現在値と最大値の割合)
+        ration = 1 - subration;
+
+        //対象オブジェクトのWidthを編集
+        bar_size.x = 1080 * ration;
+
+        //対象オブジェクトの右端を常に右端に置くために
+        //対象オブジェクトのX座標を編集
+        bar_pos.x = 540 * subration;
+
+        //対象オブジェクトのWidthのサイズ変更
+        hidebar.sizeDelta = bar_size;
+
+        //対象オブジェクトのローカル座標を変更
+        hidebar.localPosition = new Vector2(bar_pos.x, -700f);
+    }
+}
