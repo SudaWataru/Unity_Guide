@@ -1,0 +1,32 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class BackStartPosition : MonoBehaviour
+{
+    // Start is called before the first frame update
+    void Start()
+    {
+        //オブジェクトの現在の座標を入手
+        Transform SphereLocation = this.transform;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //オブジェクトの現在の座標を入手
+        Transform SphereLocation = this.transform;
+        Vector3 pos = SphereLocation.position;
+        
+        //物体がy座標：‐15より下に行くと発動
+        if (pos.y < -15f)
+        {
+            //現在位置のX座標とZ座標を取得し、Y座標を10に固定
+            pos.x = this.transform.position.x;
+            pos.z = this.transform.position.z;
+            pos.y = 10f;
+            //現在位置を取得したX,Y,Z座標を基に最初の位置に場所移動
+            SphereLocation.position = pos;
+        }
+    }
+}
