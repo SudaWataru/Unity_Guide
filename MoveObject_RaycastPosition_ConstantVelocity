@@ -1,0 +1,84 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+//マウスポインタのある場所にオブジェクトが等速で移動する
+public class MoveObject_RaycastPosition_ConstantVelocity : MonoBehaviour
+{
+    //RigidBody定義
+    Rigidbody rigidbody2;
+    
+    //Position定義
+    Vector3 StartPos2;
+    
+    //マウスポインタの位置取得変数の定義
+    //移動している間に最初にクリックした場所を忘れないように値を保持しておく変数
+    Vector3 RayPos;
+    
+    //クリック後に動き続けるためのスイッチの定義
+    //これによって動いている間にマウスをクリックしてもそっちに行かなくなる
+    bool Switch = false;
+    
+    //マウスポインタの位置まで移動する速度
+    float speed = 1.0f;
+    
+    void Start() {
+        
+        rigidbody2 = this.GetComponent<Rigidbody>();
+        
+        //現在位置取得
+        Transform tr2 = this.GetComponent<Transform>();
+        this.StartPos2 = tr2.position;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //クリック判定とそれに伴うスイッチ判定
+        if(Input.GetMouseButtonDown(0) && Switch == false)
+        {
+            //ステージ上をクリックされたなら真
+            Switch = Input.GetMouseButtonDown(0);
+            
+            //カメラの移している範囲から
+            //マウスポインタのある位置を取得して当たり判定のある光線を出す
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            
+            //当たった場合の値を取得(今回はステージの座標)
+            RaycastHit hit;
+            
+            //マウスポインタの位置取得
+            //瞬間移動しないので値を保持しておく必要がある
+            if(Physics.Raycast(ray, out hit))
+            {
+                float x = hit.point.x;
+                float y = this.StartPos2.y;
+                float z = hit.point.z;
+                RayPos = new Vector3(x, y, z);
+            }
+        }
+        
+        //クリック後にObjectが動き続けるためのスイッチ
+        else if(Switch != false)
+        {
+            //現在位置取得
+            Transform tr2 = this.GetComponent<Transform>();
+            Vector3 pos2 = tr2.position;
+                
+            //マウスポインタの位置まで直線移動
+            //move = speed * Time.deltaTime
+            //(速度)=(出したい速度の値)×(1フレームにかかる時間)
+            //MoveTowards(transform.position, RayPos, move)
+            //↑直進(スタート地点(今回は現在位置), 目的地, 呼び出しごとに進む距離(つまり移動速度))
+            float move = speed * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, RayPos, move);
+            
+            //マウスポインタの位置まで来たら停止
+            //次の位置を示せる状態にする
+            if(pos2 == RayPos)
+            {
+                Switch = false;
+            }
+        }
+    }
+}
